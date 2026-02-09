@@ -1,0 +1,1 @@
+Hola, me llamo Jericó. Este es un programa básico que mira algunos datos sobre un texto, como cuantas palabras hay, o la frecuencia de esas palabras. Hello Hello
