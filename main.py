@@ -5,7 +5,7 @@ from pathlib import Path
 
 def normalize(text):
     words = text.split()
-    words = [word.strip('.,!?¿;"\'()[]') for word in words]
+    words = [word.strip('.,!?¿;"\'()[]:-…') for word in words]
     filtered_words = [word for word in words if word]
     return filtered_words
 
@@ -30,28 +30,33 @@ def analyze_file(path):
             most_frequent = most_frequent_words(content)
             result ={
                 "total_words": counted_words,
-                "most_frequent": [
-                    {"word": word, "count": freq} 
-                    for word, freq in most_frequent.items()
-                ]
+                "most_frequent": most_frequent
             }
             return result
     except FileNotFoundError:
         print(f"File '{path}' not found.")
-        sys.exit(1)
+        return None
+    except Exception as e:
+        print(f"An error occurred while processing the file '{path}': {e}")
+        return None
 
 
 def main(path, json_file=None):
     general_result = {
         "total_documents": 0,
         "total_words": 0,
-        "most_frequent": [
-            {"word": "", "count": 0}
-        ]
+        "most_frequent": []
         }
-    word_frequency = [
-            {"word": "", "count": 0}
-        ]
+    word_frequency = {}
+    
+    p = Path(path)
+    if not p.exists():
+        print(f"The folder '{path}' does not exist.")
+        sys.exit(1)
+    if not p.is_dir():
+        print(f"'{path}' is not a folder.")
+        sys.exit(1)
+
     for file_path in Path(path).iterdir():
         if file_path.is_file():
             if not file_path.suffix == '.txt':
@@ -62,23 +67,12 @@ def main(path, json_file=None):
                 print(f"The file '{file_path}' does not contain any valid words.")
                 continue
             general_result["total_words"] += local_result["total_words"]
-            for local_word_info in local_result["most_frequent"]:
-                local_word = local_word_info["word"]
-                local_count = local_word_info["count"]
-                found = False
-                for word_frequency_info in word_frequency:
-                    if word_frequency_info["word"] == local_word:
-                        word_frequency_info["count"] += local_count
-                        found = True
-                        break
-                if not found:
-                    word_frequency.append({
-                        "word": local_word,
-                        "count": local_count
-                    })
-    word_frequency = sorted(word_frequency, key=lambda x: x["count"], reverse=True)
+            for local_word, local_count in local_result["most_frequent"].items():
+                word_frequency[local_word] = word_frequency.get(local_word, 0) + local_count
+
+    word_frequency = sorted(word_frequency.items(), key=lambda x: x[1], reverse=True)
     general_result["most_frequent"] = [
-        {"word": word_info["word"], "count": word_info["count"]}
+        {"word": word_info[0], "count": word_info[1]}
         for word_info in word_frequency[:10]
     ]
 
@@ -90,7 +84,7 @@ def main(path, json_file=None):
             json.dump(general_result, f, indent=4, ensure_ascii=False)
     else:
         print(f"Files analyzed: {general_result['total_documents']}")
-        print("Words in text: " + str(general_result["total_words"]))
+        print("Total words: " + str(general_result["total_words"]))
         print("Most frequent words: ")
         for word_info in general_result["most_frequent"]:
             print(f"'{word_info['word']}' appears {word_info['count']} times")
