@@ -48,7 +48,7 @@ def main(path, json_file=None):
         "most_frequent": []
         }
     word_frequency = {}
-    
+
     p = Path(path)
     if not p.exists():
         print(f"The folder '{path}' does not exist.")
@@ -57,10 +57,7 @@ def main(path, json_file=None):
         print(f"'{path}' is not a folder.")
         sys.exit(1)
 
-    for file_path in Path(path).iterdir():
-        if file_path.is_file():
-            if not file_path.suffix == '.txt':
-                continue
+    for file_path in Path(path).rglob("*.txt"):
             general_result["total_documents"] += 1
             local_result = analyze_file(file_path)
             if not local_result or local_result["total_words"] == 0:
@@ -69,7 +66,6 @@ def main(path, json_file=None):
             general_result["total_words"] += local_result["total_words"]
             for local_word, local_count in local_result["most_frequent"].items():
                 word_frequency[local_word] = word_frequency.get(local_word, 0) + local_count
-
     word_frequency = sorted(word_frequency.items(), key=lambda x: x[1], reverse=True)
     general_result["most_frequent"] = [
         {"word": word_info[0], "count": word_info[1]}
